@@ -4,10 +4,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // 【通訊修正】精確讀取前端傳過來的 essay 欄位
-  const { essay } = req.body;
-  if (!essay) {
-    return res.status(400).json({ error: 'essay is required' });
+  // 【超級包容邏輯】不管前端工程當初打包叫 essay、text 還是 content，通通撈出來！
+  const { essay, text, content } = req.body;
+  const finalInput = essay || text || content;
+
+  // 如果這三個口袋都是空的，才叫使用者填字
+  if (!finalInput) {
+    return res.status(400).json({ error: 'Please enter some thesis text.' });
   }
 
   // 讀取你在 Vercel 塞入的 Hugging Face 金鑰
@@ -18,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 呼交 Hugging Face 免費雲端大模型通道
+    // 呼叫 Hugging Face 免費雲端大模型通道
     const response = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -34,7 +37,7 @@ export default async function handler(req, res) {
           },
           {
             role: 'user',
-            content: essay // 將前端傳來的論文內容安全送給 AI
+            content: finalInput // 將成功撈到的文字安全送給 AI
           }
         ],
         max_tokens: 2000
@@ -51,8 +54,11 @@ export default async function handler(req, res) {
     // 提取 AI 吐出來的精準學術報告文字
     const resultText = data.choices[0].message.content;
     
-    // 回傳前端指定的 { result: ... } 格式，完美啟動「吐報告」＋「扣次數」
-    return res.status(200).json({ result: resultText });
+    // 同時回傳前端可能在等的欄位，確保報告顯現＋扣次數一次滿足
+    return res.status(200).json({ 
+      result: resultText,
+      data: resultText 
+    });
 
   } catch (error) {
     console.error('Server Error:', error);
