@@ -30,7 +30,7 @@
         .nav-links li { color: var(--text-muted); cursor: pointer; transition: 0.3s; font-size: 14px; }
         .nav-links li:hover { color: var(--text-main); }
         
-        /* 帳戶安全下拉選單容器 */
+        /* 帳戶下拉選單容器 */
         .dropdown-container { position: relative; display: flex; align-items: center; }
         .dropdown-menu {
             position: absolute; top: 40px; right: 0;
@@ -63,20 +63,20 @@
         .page { display: none; padding: 120px 40px 40px 40px; min-height: 100vh; }
         .page.active { display: block; }
 
-        /* 按鈕樣式 */
+        /* 按鈕自訂樣式 */
         .btn { padding: 12px 24px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; transition: 0.3s; font-size: 14px; }
         .btn-primary { background-color: var(--accent-blue); color: white; }
         .btn-primary:hover { background-color: #0051cb; box-shadow: 0 0 15px rgba(0,112,243,0.4); }
         .btn-outline { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); }
         .btn-outline:hover { background: #111; }
 
-        /* 1. 首頁 (Home Page) */
+        /* 1. 首頁 */
         #home-page { text-align: center; max-width: 800px; margin: 0 auto; padding-top: 180px; }
         #home-page h1 { font-size: 56px; font-weight: 800; letter-spacing: -1px; margin-bottom: 20px; background: linear-gradient(180deg, #fff 0%, #aaa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         #home-page p { font-size: 18px; color: var(--text-muted); margin-bottom: 40px; line-height: 1.6; }
         .cta-group { display: flex; justify-content: center; gap: 20px; }
 
-        /* 2. 登入頁 (Login Page) */
+        /* 2. 登入頁 */
         .auth-container { max-width: 400px; margin: 60px auto; background: var(--card-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 12px; text-align: center; }
         .auth-container h2 { margin-bottom: 24px; }
         .form-group { text-align: left; margin-bottom: 20px; }
@@ -84,7 +84,7 @@
         .form-group input { width: 100%; padding: 12px; background: #000; border: 1px solid var(--border-color); border-radius: 6px; color: white; font-size: 14px; }
         .form-group input:focus { border-color: var(--accent-blue); outline: none; }
 
-        /* 3. 工作區 (Workspace Page) */
+        /* 3. 工作區頁面 */
         .workspace-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: calc(100vh - 180px); }
         .panel { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; }
         .panel h3 { margin-bottom: 16px; font-size: 16px; color: var(--text-muted); }
@@ -92,7 +92,7 @@
         textarea:focus { border-color: var(--accent-blue); outline: none; }
         .output-box { width: 100%; flex-grow: 1; background: #000; border: 1px solid var(--border-color); border-radius: 8px; color: #ddd; padding: 16px; font-size: 15px; line-height: 1.6; overflow-y: auto; white-space: pre-wrap; }
 
-        /* 4. 付費牆 (Price Wall Page) */
+        /* 4. 價格頁面 */
         .pricing-grid { display: flex; justify-content: center; gap: 30px; margin-top: 40px; }
         .price-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 40px; width: 300px; text-align: center; transition: 0.3s; }
         .price-card.premium { border-color: var(--accent-purple); box-shadow: 0 0 20px rgba(121,40,202,0.1); }
@@ -102,7 +102,7 @@
         .features-list { list-style: none; text-align: left; color: var(--text-muted); font-size: 14px; margin-bottom: 30px; }
         .features-list li { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 
-        /* 5. 管理者後台 (Manager Page) */
+        /* 5. 管理者後台頁面 */
         .manager-grid { display: grid; grid-template-columns: 200px 1fr; gap: 40px; }
         .sidebar { border-right: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 16px; }
         .sidebar-item { padding: 10px; color: var(--text-muted); cursor: pointer; font-size: 14px; border-radius: 4px; }
@@ -114,19 +114,19 @@
 
         /* 🌟 高質感彈出視窗外圍遮罩 */
         .custom-modal-overlay {
-            display: none; /* 預設隱藏 */
+            display: none; 
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7); /* 半透明黑底 */
-            backdrop-filter: blur(5px); /* 背景現代感模糊 */
+            background: rgba(0, 0, 0, 0.7); 
+            backdrop-filter: blur(5px); 
             z-index: 9999;
             justify-content: center; align-items: center;
         }
         
         /* 🌟 彈出視窗主體 */
         .custom-modal-box {
-            background: #111111; /* 配合你網站的暗黑色調 */
+            background: #111111; 
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 30px;
@@ -311,44 +311,43 @@
         <div class="custom-modal-box">
             <button class="custom-modal-close" onclick="closeModal()">&times;</button>
             <div class="custom-modal-icon">⚠️</div>
-            <h3 class="custom-modal-title">系統提示</h3>
-            <p id="customModalMessage" class="custom-modal-message">提示訊息內容</p>
-            <button class="custom-modal-btn" onclick="closeModal()">我知道了</button>
+            <h3 class="custom-modal-title">System Notice</h3>
+            <p id="customModalMessage" class="custom-modal-message">Notification message here</p>
+            <button class="custom-modal-btn" onclick="closeModal()">Dismiss</button>
         </div>
     </div>
 
     <script>
-        // 用戶模擬資料庫狀態，擴充欄位以完美匹配 Supabase 結構
+        // 用戶模擬資料庫狀態配置
         let userState = {
             isLoggedIn: false,
             id: 'admin_mock_001',
             email: 'user@example.com',
-            tier: 'free', // 可選值: 'free' | 'pro' | 'admin'
+            tier: 'free', // 'free' | 'pro' | 'admin'
             remains: 3
         };
 
-        // 🌟 控制客製化彈出視窗的顯示與關閉函數
+        // 控制客製化彈出視窗顯示的函數
         function showAlert(message) {
             document.getElementById('customModalMessage').innerText = message;
             document.getElementById('customModal').style.display = 'flex';
         }
 
-        // 修正：確實隱藏視窗
+        // 關閉客製化彈出視窗的函數
         function closeModal() {
             document.getElementById('customModal').style.display = 'none';
         }
 
-        // 單頁式路由導航
+        // 單頁式路由導航切換
         function navigateTo(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
             if (targetPage) targetPage.classList.add('active');
             
-            // 切換頁面時自動收起下拉選單
             document.getElementById('avatar-dropdown').classList.remove('show');
         }
 
-        // 模擬登入成功邏輯
+        // 模擬登入流程
         function simulateLogin() {
             const email = document.getElementById('login-email').value.trim();
             if(!email) { showAlert('Please enter an email.'); return; }
@@ -371,7 +370,7 @@
             navigateTo('workspace');
         }
 
-        // 模擬登出邏輯
+        // 模擬登出流程
         function simulateLogout() {
             userState.isLoggedIn = false;
             userState.tier = 'free';
@@ -387,7 +386,7 @@
             navigateTo('home');
         }
 
-        // 💳 預留的 Stripe 金流跳轉處理位置
+        // Stripe 金流跳轉接軌預留位置
         function redirectToStripe() {
             if (!userState.isLoggedIn) {
                 showAlert('Please sign in first to upgrade your account.');
@@ -395,10 +394,10 @@
                 return;
             }
             
-            showAlert('【Stripe 金流接軌預留位置】\n\n系統接下來會發送請求到後端 API (例如 /api/checkout) 建立訂單，並將你導向至 Stripe 的安全刷卡畫面。\n\n付款完成後，Stripe 會透過 Webhook 自動更新你的 Supabase 資料庫狀態，本欄位代碼已開好！');
+            showAlert('【Stripe Gateway Integration Placeholder】\n\nThe client will now dispatch a request to the backend API endpoint (e.g., /api/checkout) to generate a session and securely redirect you to the Stripe Hosted Checkout view.\n\nUpon successful checkout, the database tier will update via webhooks automatically.');
         }
 
-        // 【內部開發測試功能】點擊選單內按鈕可以快速切換 Free/Pro/Admin 三種 UI 狀態
+        // 內部開發測試用：點擊選單內按鈕可以快速切換 Free/Pro/Admin 狀態
         function toggleUserTierSimulation(e) {
             if(e) e.stopPropagation();
             if(!userState.isLoggedIn) return;
@@ -413,18 +412,18 @@
             updateUserUI();
         }
 
-        // 🌟 獨立控制：點擊頭像開關下拉選單
+        // 點擊頭像開關下拉選單
         document.getElementById('user-avatar').addEventListener('click', function(e) {
             e.stopPropagation();
             document.getElementById('avatar-dropdown').classList.toggle('show');
         });
 
-        // 點擊網頁任意空白處，自動收起下拉選單
+        // 點擊網頁任意空白處，自動收起選單
         document.addEventListener('click', function() {
             document.getElementById('avatar-dropdown').classList.remove('show');
         });
 
-        // 更新右上角資訊欄 UI 及導覽列權限的核心邏輯
+        // 全域同步更新右上角資訊欄 UI 核心邏輯
         function updateUserUI() {
             const remainBadge = document.getElementById('remain-badge');
             const proBadge = document.getElementById('pro-badge');
@@ -468,7 +467,7 @@
             }
         }
 
-        // 串接 Vercel 後端安全通道並呼叫大模型
+        // 串接後端通道並呼叫大模型進行分析
         async function runThesisAnalysis() {
             if (!userState.isLoggedIn) {
                 showAlert('Please login first to use the analysis tool.');
@@ -528,13 +527,13 @@
                 }
             } catch (err) {
                 showAlert(`System Error: ${err.message}`);
-            } finally { // 🌟 已完美修正為 double 'l' 的 finally
+            } finally {
                 analyzeBtn.disabled = false;
                 analyzeBtn.innerText = "Analyze Essay";
             }
         }
 
-        // 頁面初次運作時，跑一遍權限檢查初始化
+        // 初始化權限 UI Context
         updateUserUI();
     </script>
 </body>
