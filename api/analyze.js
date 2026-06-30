@@ -21,8 +21,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 【模型修正】全面切換為極度穩定的官方標準 gemini-pro 模型
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    // 【終極修正】切換至官方 v1 正式版端點，使用最新的免費主力模型 gemini-2.5-flash
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -32,12 +32,11 @@ export default async function handler(req, res) {
           {
             parts: [
               {
-                text: `Please analyze this thesis text:\n\n${finalInput}`
+                text: `You are an expert academic editor. Analyze the provided thesis text for logic, tone, grammar, spelling, and structure. Provide a professional, detailed review report in English with clear sections and actionable feedback.\n\nHere is the thesis text:\n${finalInput}`
               }
             ]
           }
         ],
-        // 舊款模型不支援獨立的 systemInstruction，我們直接優雅地合併進去，相容性 100%
         generationConfig: {
           maxOutputTokens: 2000
         }
