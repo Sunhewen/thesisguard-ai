@@ -327,12 +327,13 @@
             remains: 3
         };
 
-        // 🌟 新增：控制客製化彈出視窗的顯示與關閉函數
+        // 🌟 控制客製化彈出視窗的顯示與關閉函數
         function showAlert(message) {
             document.getElementById('customModalMessage').innerText = message;
             document.getElementById('customModal').style.display = 'flex';
         }
 
+        // 修正：確實隱藏視窗
         function closeModal() {
             document.getElementById('customModal').style.display = 'none';
         }
@@ -527,7 +528,7 @@
                 }
             } catch (err) {
                 showAlert(`System Error: ${err.message}`);
-            } finaly {
+            } finally { // 🌟 已完美修正為 double 'l' 的 finally
                 analyzeBtn.disabled = false;
                 analyzeBtn.innerText = "Analyze Essay";
             }
