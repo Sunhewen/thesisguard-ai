@@ -30,11 +30,34 @@
         .nav-links li { color: var(--text-muted); cursor: pointer; transition: 0.3s; font-size: 14px; }
         .nav-links li:hover { color: var(--text-main); }
         
+        /* 帳戶安全下拉選單容器 */
+        .dropdown-container { position: relative; display: flex; align-items: center; }
+        .dropdown-menu {
+            position: absolute; top: 40px; right: 0;
+            background: #111; border: 1px solid var(--border-color);
+            border-radius: 8px; width: 220px; padding: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 1000;
+            display: none; flex-direction: column; gap: 6px;
+        }
+        .dropdown-menu.show { display: flex; }
+        .dropdown-header {
+            padding: 6px 10px; border-bottom: 1px solid var(--border-color);
+            font-size: 12px; color: var(--text-muted);
+            word-break: break-all; margin-bottom: 5px;
+        }
+        .dropdown-item {
+            padding: 8px 10px; font-size: 13px; color: var(--text-main);
+            cursor: pointer; border-radius: 4px; text-align: left; background: transparent; border: none; width: 100%; transition: 0.2s;
+        }
+        .dropdown-item:hover { background: #222; }
+        .dropdown-item.logout { color: #ff4d4d; font-weight: 500; }
+        .dropdown-item.logout:hover { background: rgba(255,77,77,0.1); }
+
         /* 用戶狀態區塊 */
         .user-status-block { display: flex; align-items: center; gap: 12px; background: #161616; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-color); }
         .remains-badge { font-size: 12px; color: #ff4d4d; font-weight: bold; }
         .pro-badge { font-size: 11px; background: linear-gradient(45deg, #f50057, #7928ca); padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-        .avatar { width: 24px; height: 24px; background: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .avatar { width: 24px; height: 24px; background: #333; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; user-select: none; }
 
         /* 頁面通用容器 */
         .page { display: none; padding: 120px 40px 40px 40px; min-height: 100vh; }
@@ -98,12 +121,26 @@
             <li onclick="navigateTo('home')">Home</li>
             <li onclick="navigateTo('workspace')">Workspace</li>
             <li onclick="navigateTo('pricing')">Pricing</li>
-            <li onclick="navigateTo('manager')">Manager</li>
-            <div class="user-status-block" id="user-status-ui" style="display:none;">
-                <span id="remain-badge" class="remains-badge">Remains: 3 times</span>
-                <span id="pro-badge" class="pro-badge" style="display:none;">PRO</span>
-                <div class="avatar" id="user-avatar" onclick="toggleUserTierSimulation()" title="點擊切換 Free/PRO 測試身分">U</div>
+            <li id="nav-manager-btn" onclick="navigateTo('manager')" style="display: none;">Manager</li>
+            
+            <div class="dropdown-container">
+                <div class="user-status-block" id="user-status-ui" style="display:none;">
+                    <span id="remain-badge" class="remains-badge">Remains: 3 times</span>
+                    <span id="pro-badge" class="pro-badge" style="display:none;">PRO</span>
+                    <span id="admin-badge" class="pro-badge" style="display:none; background: linear-gradient(45deg, #0070f3, #7928ca);">ADMIN</span>
+                    <div class="avatar" id="user-avatar" style="cursor: pointer;" title="Open account menu">U</div>
+                </div>
+                
+                <div id="avatar-dropdown" class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <div id="dropdown-email" style="font-weight: 600; color: #fff; text-transform: none;">user@example.com</div>
+                        <div id="dropdown-role" style="margin-top: 4px;">Plan: FREE</div>
+                    </div>
+                    <button class="dropdown-item" onclick="toggleUserTierSimulation(event)" style="color: var(--accent-blue); font-size: 12px;">🔄 Cycle Role (Dev Test)</button>
+                    <button class="dropdown-item logout" onclick="simulateLogout()">Log Out</button>
+                </div>
             </div>
+
             <li id="nav-login-btn" onclick="navigateTo('login')"><button class="btn btn-outline" style="padding: 6px 14px;">Login</button></li>
         </ul>
     </nav>
@@ -173,7 +210,7 @@
                     <li>✓ Advanced Logic & Tone Review</li>
                     <li>✓ Priority AI Processing</li>
                 </ul>
-                <button class="btn btn-primary" style="width:100%; background: linear-gradient(45deg, var(--accent-blue), var(--accent-purple));" onclick="upgradeToProSimulation()">Start Free Trial</button>
+                <button class="btn btn-primary" style="width:100%; background: linear-gradient(45deg, var(--accent-blue), var(--accent-purple));" onclick="redirectToStripe()">Start Free Trial</button>
             </div>
         </div>
     </section>
@@ -216,10 +253,12 @@
     </section>
 
     <script>
-        // 用戶模擬資料庫狀態
+        // 用戶模擬資料庫狀態，擴充欄位以完美匹配 Supabase 結構
         let userState = {
             isLoggedIn: false,
-            tier: 'free', // 'free' 或 'pro'
+            id: 'admin_mock_001',
+            email: 'user@example.com',
+            tier: 'free', // 可選值: 'free' | 'pro' | 'admin'
             remains: 3
         };
 
@@ -228,55 +267,135 @@
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
             if (targetPage) targetPage.classList.add('active');
+            
+            // 切換頁面時自動收起下拉選單
+            document.getElementById('avatar-dropdown').classList.remove('show');
         }
 
         // 模擬登入成功邏輯
         function simulateLogin() {
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             if(!email) { alert('Please enter an email.'); return; }
             
             userState.isLoggedIn = true;
+            userState.email = email;
+            // 隨機生成或對齊一個簡單的 Mock 使用者 ID 傳給後端
+            userState.id = 'usr_' + btoa(email).substring(0, 8);
+            
+            // 開發測試彩蛋：如果 Email 輸入包含 "admin"，自動賦予管理員身份方便測試
+            if(email.toLowerCase().includes('admin')) {
+                userState.tier = 'admin';
+            } else {
+                userState.tier = 'free';
+            }
+            
             document.getElementById('nav-login-btn').style.display = 'none';
             document.getElementById('user-status-ui').style.display = 'flex';
             updateUserUI();
             
-            alert('Logged in successfully! Redirecting to Workspace.');
+            alert(`Logged in successfully as ${userState.tier.toUpperCase()}! Redirecting to Workspace.`);
             navigateTo('workspace');
         }
 
-        // 模擬在付費牆訂閱升級
-        function upgradeToProSimulation() {
-            userState.isLoggedIn = true;
-            userState.tier = 'pro';
-            document.getElementById('nav-login-btn').style.display = 'none';
-            document.getElementById('user-status-ui').style.display = 'flex';
+        // 模擬登出邏輯
+        function simulateLogout() {
+            userState.isLoggedIn = false;
+            userState.tier = 'free';
+            userState.remains = 3;
+            userState.email = 'user@example.com';
+            
+            document.getElementById('nav-login-btn').style.display = 'block';
+            document.getElementById('user-status-ui').style.display = 'none';
+            document.getElementById('avatar-dropdown').classList.remove('show');
             updateUserUI();
-            alert('Thank you for subscribing! Your account is now PRO with unlimited access.');
-            navigateTo('workspace');
+            
+            alert('Logged out successfully.');
+            navigateTo('home');
         }
 
-        // 點擊頭像可以切換身分（方便你自己測試兩種 UI 變化）
-        function toggleUserTierSimulation() {
+        // 💳 預留的 Stripe 金流跳轉處理位置（任務三）
+        function redirectToStripe() {
+            if (!userState.isLoggedIn) {
+                alert('Please sign in first to upgrade your account.');
+                navigateTo('login');
+                return;
+            }
+            
+            // 彈出預留指示資訊
+            alert('【Stripe 金流接軌預留位置】\n\n系統接下來會發送請求到後端 API (例如 /api/checkout) 建立訂單，並將你導向至 Stripe 的安全刷卡畫面。\n\n付款完成後，Stripe 會透過 Webhook 自動更新你的 Supabase 資料庫狀態，本欄位代碼已開好！');
+            
+            // 未來完成金流後，只需在這裡解開下方備註代碼：
+            // window.location.href = data.stripeCheckoutUrl;
+        }
+
+        // 【內部開發測試功能】點擊選單內按鈕可以快速切換 Free/Pro/Admin 三種 UI 狀態
+        function toggleUserTierSimulation(e) {
+            if(e) e.stopPropagation();
             if(!userState.isLoggedIn) return;
-            userState.tier = (userState.tier === 'free') ? 'pro' : 'free';
+            
+            if (userState.tier === 'free') {
+                userState.tier = 'pro';
+            } else if (userState.tier === 'pro') {
+                userState.tier = 'admin';
+            } else {
+                userState.tier = 'free';
+            }
             updateUserUI();
         }
 
-        // 更新右上角資訊欄 UI 的核心邏輯
+        // 🌟 獨立控制：點擊頭像開關下拉選單
+        document.getElementById('user-avatar').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('avatar-dropdown').classList.toggle('show');
+        });
+
+        // 點擊網頁任意空白處，自動收起下拉選單
+        document.addEventListener('click', function() {
+            document.getElementById('avatar-dropdown').classList.remove('show');
+        });
+
+        // 更新右上角資訊欄 UI 及導覽列權限的核心邏輯
         function updateUserUI() {
             const remainBadge = document.getElementById('remain-badge');
             const proBadge = document.getElementById('pro-badge');
+            const adminBadge = document.getElementById('admin-badge');
             const avatar = document.getElementById('user-avatar');
+            const managerBtn = document.getElementById('nav-manager-btn');
+            
+            const dropdownEmail = document.getElementById('dropdown-email');
+            const dropdownRole = document.getElementById('dropdown-role');
 
-            if (userState.tier === 'pro') {
+            // 1. 同步下拉選單內部的最新帳戶狀態
+            if (dropdownEmail) dropdownEmail.innerText = userState.email;
+            if (dropdownRole) dropdownRole.innerText = `Plan: ${userState.tier.toUpperCase()}`;
+
+            // 2. 🛡️ 權限防禦過濾：只有管理員才能在頂部看見 Manager 按鈕
+            if (managerBtn) {
+                if (userState.tier === 'admin') {
+                    managerBtn.style.display = 'block';
+                } else {
+                    managerBtn.style.display = 'none';
+                }
+            }
+
+            // 3. 根據不同身份切換 Navbar 徽章狀態
+            if (userState.tier === 'admin') {
+                remainBadge.style.display = 'none';
+                proBadge.style.display = 'none';
+                if(adminBadge) adminBadge.style.display = 'inline-block';
+                avatar.innerText = 'AD';
+                avatar.style.background = 'linear-gradient(45deg, #0070f3, #7928ca)';
+            } else if (userState.tier === 'pro') {
                 remainBadge.style.display = 'none';
                 proBadge.style.display = 'inline-block';
+                if(adminBadge) adminBadge.style.display = 'none';
                 avatar.innerText = 'PRO';
                 avatar.style.background = 'linear-gradient(45deg, #f50057, #7928ca)';
             } else {
                 remainBadge.style.display = 'inline-block';
                 remainBadge.innerText = `Remains: ${userState.remains} times`;
                 proBadge.style.display = 'none';
+                if(adminBadge) adminBadge.style.display = 'none';
                 avatar.innerText = 'U';
                 avatar.style.background = '#333';
             }
@@ -290,7 +409,7 @@
                 return;
             }
 
-            if (userState.tier === 'free' && userState.remains <= 0) {
+            if (userState.tier !== 'pro' && userState.tier !== 'admin' && userState.remains <= 0) {
                 alert('You have 0 free credits left! Please upgrade to PRO for unlimited usage.');
                 navigateTo('pricing');
                 return;
@@ -307,28 +426,38 @@
             analyzeBtn.innerText = "Analyzing...";
 
             try {
-                // 【終極校對修正】將前端的打包名稱，與後端完全對齊
+                // 發送請求，同時傳遞使用者 ID 與 Email 提供 Supabase 後端進行點數對帳
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         essay: essayText,
                         text: essayText,
-                        content: essayText
+                        content: essayText,
+                        userId: userState.id,
+                        userEmail: userState.email
                     })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // 【回傳相容修正】讀取後端吐出來的 result 資料
                     outputBox.innerText = data.result || data.data || "Analysis completed.";
                     
-                    // 如果是一般用戶，扣除一次機會並更新畫面
-                    if (userState.tier === 'free') {
-                        userState.remains--;
-                        updateUserUI();
+                    // 🔥【核心即時同步】拋棄前端死數據，直接讀取後端資料庫回傳的最新真實點數與身份
+                    if (data.userRole) {
+                        userState.tier = data.userRole;
                     }
+                    
+                    if (data.creditsRemains !== undefined) {
+                        if (data.creditsRemains === '∞') {
+                            userState.tier = 'pro';
+                        } else {
+                            userState.remains = parseInt(data.creditsRemains) || 0;
+                        }
+                    }
+                    updateUserUI();
+                    
                 } else {
                     outputBox.innerText = `Error: ${data.error || 'Failed to process.'}`;
                 }
@@ -339,6 +468,9 @@
                 analyzeBtn.innerText = "Analyze Essay";
             }
         }
+
+        // 頁面初次運作時，跑一遍權限檢查初始化
+        updateUserUI();
     </script>
 </body>
 </html>
