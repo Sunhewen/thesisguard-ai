@@ -4,12 +4,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { text } = req.body;
-  if (!text) {
-    return res.status(400).json({ error: 'Text is required' });
+  // 【通訊修正】精確讀取前端傳過來的 essay 欄位
+  const { essay } = req.body;
+  if (!essay) {
+    return res.status(400).json({ error: 'essay is required' });
   }
 
-  // 這裡依然讀取這個變數名稱，但裡面此時放的是 Hugging Face 金鑰
+  // 讀取你在 Vercel 塞入的 Hugging Face 金鑰
   const apiKey = process.env.GEMINI_API_KEY; 
   
   if (!apiKey) {
@@ -17,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 呼叫 Hugging Face 免費雲端大模型通道
+    // 呼交 Hugging Face 免費雲端大模型通道
     const response = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen2.5-72B-Instruct', // 目前免綁卡最強大的 720 億參數學術邏輯大模型
+        model: 'Qwen/Qwen2.5-72B-Instruct', 
         messages: [
           {
             role: 'system',
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
           },
           {
             role: 'user',
-            content: text
+            content: essay // 將前端傳來的論文內容安全送給 AI
           }
         ],
         max_tokens: 2000
@@ -47,8 +48,10 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: data.error?.message || 'Hugging Face API Error' });
     }
 
-    // 成功抓取 AI 吐出來的精準學術報告
+    // 提取 AI 吐出來的精準學術報告文字
     const resultText = data.choices[0].message.content;
+    
+    // 回傳前端指定的 { result: ... } 格式，完美啟動「吐報告」＋「扣次數」
     return res.status(200).json({ result: resultText });
 
   } catch (error) {
