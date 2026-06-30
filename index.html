@@ -472,5 +472,14 @@
         // 頁面初次運作時，跑一遍權限檢查初始化
         updateUserUI();
     </script>
+    <div id="customModal" class="custom-modal-overlay">
+          <div class="custom-modal-box">
+            <button class="custom-modal-close" onclick="closeModal()">&times;</button>
+            <div class="custom-modal-icon">⚠️</div>
+            <h3 class="custom-modal-title">系統提示</h3>
+            <p id="customModalMessage" class="custom-modal-message">這裡會顯示錯誤或提示訊息內容。</p>
+            <button class="custom-modal-btn" onclick="closeModal()">我知道了</button>
+          </div>
+     </div>
 </body>
 </html>
