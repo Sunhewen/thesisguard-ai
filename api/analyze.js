@@ -1,53 +1,58 @@
-// api/analyze.js
-// Vercel 雲端後端安全通道：負責接收前端資料並加上 API Key 傳給 Google Gemini
+export default async function handler(req, res) {
+  // 唯有 POST 請求才能放行
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-module.exports = async (req, res) => {
-    // 限制只允許 POST 請求
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
-    }
+  const { text } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: 'Text is required' });
+  }
 
-    const { essayText } = req.body;
-    if (!essayText) {
-        return res.status(400).json({ error: 'Essay text is required.' });
-    }
+  // 這裡依然讀取這個變數名稱，但裡面此時放的是 Hugging Face 金鑰
+  const apiKey = process.env.GEMINI_API_KEY; 
+  
+  if (!apiKey) {
+    return res.status(500).json({ error: 'API key missing in Vercel settings' });
+  }
 
-    // 從 Vercel 環境變數中抓取真實的 Key，絕不暴露在外
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        return res.status(500).json({ error: 'Server configuration error: Missing Gemini API Key.' });
-    }
+  try {
+    // 呼叫 Hugging Face 免費雲端大模型通道
+    const response = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'Qwen/Qwen2.5-72B-Instruct', // 目前免綁卡最強大的 720 億參數學術邏輯大模型
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert academic editor. Analyze the provided thesis text for logic, tone, grammar, spelling, and structure. Provide a professional, detailed review report in English with clear sections and actionable feedback.'
+          },
+          {
+            role: 'user',
+            content: text
+          }
+        ],
+        max_tokens: 2000
+      })
+    });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+    const data = await response.json();
     
-    // 設定高階學術期刊編輯的 Prompt 靈魂
-    const systemPrompt = "You are a world-class academic journal editor. Review the following text for spelling, logic errors, sentence structure, and academic tone. Provide feedback using clean bullet points and professional wording. Response must be in English.";
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                "contents": [{
-                    "parts": [{
-                        "text": `${systemPrompt}\n\nUser Essay:\n${essayText}`
-                    }]
-                }]
-            })
-        });
-
-        if (!response.ok) {
-            const errData = await response.json();
-            return res.status(response.status).json({ error: 'Gemini API Error', details: errData });
-        }
-
-        const data = await response.json();
-        const replyText = data.candidates[0].content.parts[0].text;
-        
-        // 將 Gemini 的審查報告安全回傳給前台
-        return res.status(200).json({ text: replyText });
-
-    } catch (error) {
-        return res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    if (!response.ok) {
+      console.error('Hugging Face Error:', data);
+      return res.status(response.status).json({ error: data.error?.message || 'Hugging Face API Error' });
     }
-};
+
+    // 成功抓取 AI 吐出來的精準學術報告
+    const resultText = data.choices[0].message.content;
+    return res.status(200).json({ result: resultText });
+
+  } catch (error) {
+    console.error('Server Error:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
