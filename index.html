@@ -282,7 +282,7 @@
             }
         }
 
-        // 串接 Vercel 後端安全通道並呼叫 Gemini
+        // 串接 Vercel 後端安全通道並呼叫大模型
         async function runThesisAnalysis() {
             if (!userState.isLoggedIn) {
                 alert('Please login first to use the analysis tool.');
@@ -302,22 +302,27 @@
             const outputBox = document.getElementById('analysis-output');
             const analyzeBtn = document.getElementById('analyze-btn');
 
-            outputBox.innerText = "Analyzing thesis logic and tone with Gemini API... Please wait.";
+            outputBox.innerText = "Analyzing thesis logic and tone with AI... Please wait.";
             analyzeBtn.disabled = true;
             analyzeBtn.innerText = "Analyzing...";
 
             try {
-                // 呼叫 Vercel 的後端 API 通道
+                // 【終極校對修正】將前端的打包名稱，與後端完全對齊
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ essayText: essayText })
+                    body: JSON.stringify({ 
+                        essay: essayText,
+                        text: essayText,
+                        content: essayText
+                    })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    outputBox.innerText = data.text;
+                    // 【回傳相容修正】讀取後端吐出來的 result 資料
+                    outputBox.innerText = data.result || data.data || "Analysis completed.";
                     
                     // 如果是一般用戶，扣除一次機會並更新畫面
                     if (userState.tier === 'free') {
