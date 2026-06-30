@@ -112,93 +112,60 @@
         .stat-card p { color: var(--text-muted); font-size: 12px; margin-bottom: 8px; }
         .stat-card h4 { font-size: 24px; font-weight: bold; }
 
-
-        /* 彈出視窗外圍遮罩 */
+        /* 🌟 高質感彈出視窗外圍遮罩 */
         .custom-modal-overlay {
-          display: none; /* 預設隱藏 */
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.7); /* 半透明黑底 */
-          backdrop-filter: blur(4px); /* 背景模糊，極具現代感 */
-          z-index: 9999; /* 確保在最上層 */
-          justify-content: center;
-          align-items: center;
+            display: none; /* 預設隱藏 */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* 半透明黑底 */
+            backdrop-filter: blur(5px); /* 背景現代感模糊 */
+            z-index: 9999;
+            justify-content: center; align-items: center;
         }
         
-        /* 彈出視窗主體 */
+        /* 🌟 彈出視窗主體 */
         .custom-modal-box {
-          background: #1e1e2e; /* 配合你網站的深色主題 */
-          border: 1px solid #313244;
-          border-radius: 16px;
-          padding: 28px;
-          width: 90%;
-          max-width: 400px;
-          text-align: center;
-          position: relative;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-          animation: modalFadeIn 0.3s ease-out;
+            background: #111111; /* 配合你網站的暗黑色調 */
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%; max-width: 420px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            animation: modalFadeIn 0.25s ease-out;
         }
         
-        /* 彈出動畫 */
         @keyframes modalFadeIn {
-          from { transform: scale(0.9); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
         
-        /* 右上角叉叉按鈕 */
+        /* 🌟 右上角關閉叉叉 */
         .custom-modal-close {
-          position: absolute;
-          top: 12px;
-          right: 16px;
-          background: none;
-          border: none;
-          color: #a6adc8;
-          font-size: 24px;
-          cursor: pointer;
-          transition: color 0.2s;
+            position: absolute;
+            top: 14px; right: 18px;
+            background: none; border: none;
+            color: var(--text-muted);
+            font-size: 22px; cursor: pointer;
+            transition: color 0.2s;
         }
-        .custom-modal-close:hover {
-          color: #f38ba8; /* 懸停時變淡紅色 */
-        }
+        .custom-modal-close:hover { color: #ff4d4d; }
         
-        /* 驚嘆號圖示 */
-        .custom-modal-icon {
-          font-size: 40px;
-          margin-bottom: 12px;
-        }
+        /* 🌟 提示圖示與文字 */
+        .custom-modal-icon { font-size: 36px; margin-bottom: 12px; }
+        .custom-modal-title { color: var(--text-main); margin-bottom: 12px; font-size: 18px; font-weight: 600; }
+        .custom-modal-message { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px; white-space: pre-line; }
         
-        /* 標題與內文 */
-        .custom-modal-title {
-          color: #cdd6f4;
-          margin: 0 0 10px 0;
-          font-size: 18px;
-          font-weight: 600;
-        }
-        .custom-modal-message {
-          color: #bac2de;
-          font-size: 14px;
-          line-height: 1.6;
-          margin-bottom: 20px;
-          white-space: pre-line; /* 支援訊息換行 */
-        }
-        
-        /* 下方按鈕 */
+        /* 🌟 視窗確認按鈕 */
         .custom-modal-btn {
-          background: #cba6f7; /* 浪漫的紫色調，可依喜好更換 */
-          color: #11111b;
-          border: none;
-          padding: 10px 24px;
-          border-radius: 8px;
-          font-weight: bold;
-          cursor: pointer;
-          transition: opacity 0.2s;
+            background: var(--accent-blue); color: white;
+            border: none; padding: 10px 28px; border-radius: 6px;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: background 0.2s;
         }
-        .custom-modal-btn:hover {
-          opacity: 0.9;
-        }
+        .custom-modal-btn:hover { background: #0051cb; }
     </style>
 </head>
 <body>
@@ -340,6 +307,16 @@
         </div>
     </section>
 
+    <div id="customModal" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <button class="custom-modal-close" onclick="closeModal()">&times;</button>
+            <div class="custom-modal-icon">⚠️</div>
+            <h3 class="custom-modal-title">系統提示</h3>
+            <p id="customModalMessage" class="custom-modal-message">提示訊息內容</p>
+            <button class="custom-modal-btn" onclick="closeModal()">我知道了</button>
+        </div>
+    </div>
+
     <script>
         // 用戶模擬資料庫狀態，擴充欄位以完美匹配 Supabase 結構
         let userState = {
@@ -349,6 +326,16 @@
             tier: 'free', // 可選值: 'free' | 'pro' | 'admin'
             remains: 3
         };
+
+        // 🌟 新增：控制客製化彈出視窗的顯示與關閉函數
+        function showAlert(message) {
+            document.getElementById('customModalMessage').innerText = message;
+            document.getElementById('customModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').style.display = 'none';
+        }
 
         // 單頁式路由導航
         function navigateTo(pageId) {
@@ -363,14 +350,12 @@
         // 模擬登入成功邏輯
         function simulateLogin() {
             const email = document.getElementById('login-email').value.trim();
-            if(!email) { alert('Please enter an email.'); return; }
+            if(!email) { showAlert('Please enter an email.'); return; }
             
             userState.isLoggedIn = true;
             userState.email = email;
-            // 隨機生成或對齊一個簡單的 Mock 使用者 ID 傳給後端
             userState.id = 'usr_' + btoa(email).substring(0, 8);
             
-            // 開發測試彩蛋：如果 Email 輸入包含 "admin"，自動賦予管理員身份方便測試
             if(email.toLowerCase().includes('admin')) {
                 userState.tier = 'admin';
             } else {
@@ -381,7 +366,7 @@
             document.getElementById('user-status-ui').style.display = 'flex';
             updateUserUI();
             
-            alert(`Logged in successfully as ${userState.tier.toUpperCase()}! Redirecting to Workspace.`);
+            showAlert(`Logged in successfully as ${userState.tier.toUpperCase()}! Redirecting to Workspace.`);
             navigateTo('workspace');
         }
 
@@ -397,23 +382,19 @@
             document.getElementById('avatar-dropdown').classList.remove('show');
             updateUserUI();
             
-            alert('Logged out successfully.');
+            showAlert('Logged out successfully.');
             navigateTo('home');
         }
 
-        // 💳 預留的 Stripe 金流跳轉處理位置（任務三）
+        // 💳 預留的 Stripe 金流跳轉處理位置
         function redirectToStripe() {
             if (!userState.isLoggedIn) {
-                alert('Please sign in first to upgrade your account.');
+                showAlert('Please sign in first to upgrade your account.');
                 navigateTo('login');
                 return;
             }
             
-            // 彈出預留指示資訊
-            alert('【Stripe 金流接軌預留位置】\n\n系統接下來會發送請求到後端 API (例如 /api/checkout) 建立訂單，並將你導向至 Stripe 的安全刷卡畫面。\n\n付款完成後，Stripe 會透過 Webhook 自動更新你的 Supabase 資料庫狀態，本欄位代碼已開好！');
-            
-            // 未來完成金流後，只需在這裡解開下方備註代碼：
-            // window.location.href = data.stripeCheckoutUrl;
+            showAlert('【Stripe 金流接軌預留位置】\n\n系統接下來會發送請求到後端 API (例如 /api/checkout) 建立訂單，並將你導向至 Stripe 的安全刷卡畫面。\n\n付款完成後，Stripe 會透過 Webhook 自動更新你的 Supabase 資料庫狀態，本欄位代碼已開好！');
         }
 
         // 【內部開發測試功能】點擊選單內按鈕可以快速切換 Free/Pro/Admin 三種 UI 狀態
@@ -453,11 +434,9 @@
             const dropdownEmail = document.getElementById('dropdown-email');
             const dropdownRole = document.getElementById('dropdown-role');
 
-            // 1. 同步下拉選單內部的最新帳戶狀態
             if (dropdownEmail) dropdownEmail.innerText = userState.email;
             if (dropdownRole) dropdownRole.innerText = `Plan: ${userState.tier.toUpperCase()}`;
 
-            // 2. 🛡️ 權限防禦過濾：只有管理員才能在頂部看見 Manager 按鈕
             if (managerBtn) {
                 if (userState.tier === 'admin') {
                     managerBtn.style.display = 'block';
@@ -466,7 +445,6 @@
                 }
             }
 
-            // 3. 根據不同身份切換 Navbar 徽章狀態
             if (userState.tier === 'admin') {
                 remainBadge.style.display = 'none';
                 proBadge.style.display = 'none';
@@ -492,19 +470,19 @@
         // 串接 Vercel 後端安全通道並呼叫大模型
         async function runThesisAnalysis() {
             if (!userState.isLoggedIn) {
-                alert('Please login first to use the analysis tool.');
+                showAlert('Please login first to use the analysis tool.');
                 navigateTo('login');
                 return;
             }
 
             if (userState.tier !== 'pro' && userState.tier !== 'admin' && userState.remains <= 0) {
-                alert('You have 0 free credits left! Please upgrade to PRO for unlimited usage.');
+                showAlert('You have 0 free credits left! Please upgrade to PRO for unlimited usage.');
                 navigateTo('pricing');
                 return;
             }
 
             const essayText = document.getElementById('essay-input').value.trim();
-            if (!essayText) { alert('Please paste some text to analyze.'); return; }
+            if (!essayText) { showAlert('Please paste some text to analyze.'); return; }
 
             const outputBox = document.getElementById('analysis-output');
             const analyzeBtn = document.getElementById('analyze-btn');
@@ -514,7 +492,6 @@
             analyzeBtn.innerText = "Analyzing...";
 
             try {
-                // 發送請求，同時傳遞使用者 ID 與 Email 提供 Supabase 後端進行點數對帳
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -532,7 +509,6 @@
                 if (response.ok) {
                     outputBox.innerText = data.result || data.data || "Analysis completed.";
                     
-                    // 🔥【核心即時同步】拋棄前端死數據，直接讀取後端資料庫回傳的最新真實點數與身份
                     if (data.userRole) {
                         userState.tier = data.userRole;
                     }
@@ -547,11 +523,11 @@
                     updateUserUI();
                     
                 } else {
-                    outputBox.innerText = `Error: ${data.error || 'Failed to process.'}`;
+                    showAlert(`Error: ${data.error || 'Failed to process.'}`);
                 }
             } catch (err) {
-                outputBox.innerText = `System Error: ${err.message}`;
-            } finally {
+                showAlert(`System Error: ${err.message}`);
+            } finaly {
                 analyzeBtn.disabled = false;
                 analyzeBtn.innerText = "Analyze Essay";
             }
@@ -560,14 +536,5 @@
         // 頁面初次運作時，跑一遍權限檢查初始化
         updateUserUI();
     </script>
-    <div id="customModal" class="custom-modal-overlay">
-          <div class="custom-modal-box">
-            <button class="custom-modal-close" onclick="closeModal()">&times;</button>
-            <div class="custom-modal-icon">⚠️</div>
-            <h3 class="custom-modal-title">系統提示</h3>
-            <p id="customModalMessage" class="custom-modal-message">這裡會顯示錯誤或提示訊息內容。</p>
-            <button class="custom-modal-btn" onclick="closeModal()">我知道了</button>
-          </div>
-     </div>
 </body>
 </html>
