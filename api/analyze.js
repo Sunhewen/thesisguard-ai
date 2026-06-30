@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Please enter some thesis text.' });
   }
 
-  // 讀取你在 Vercel 塞入的 Hugging Face 金鑰
+  // 讀取你在 Vercel 塞入的 Gemini 官方金鑰
   const apiKey = process.env.GEMINI_API_KEY; 
   
   if (!apiKey) {
@@ -21,38 +21,49 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 呼叫 Hugging Face 免費雲端大模型通道
-    const response = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
+    // 呼叫 Google Gemini 官方原生 API（完全契合你的 GEMINI_API_KEY！）
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'Qwen/Qwen2.5-72B-Instruct', 
-        messages: [
+        contents: [
           {
-            role: 'system',
-            content: 'You are an expert academic editor. Analyze the provided thesis text for logic, tone, grammar, spelling, and structure. Provide a professional, detailed review report in English with clear sections and actionable feedback.'
-          },
-          {
-            role: 'user',
-            content: finalInput // 將成功撈到的文字安全送給 AI
+            parts: [
+              {
+                text: `Please analyze this thesis text:\n\n${finalInput}`
+              }
+            ]
           }
         ],
-        max_tokens: 2000
+        systemInstruction: {
+          parts: [
+            {
+              text: "You are an expert academic editor. Analyze the provided thesis text for logic, tone, grammar, spelling, and structure. Provide a professional, detailed review report in English with clear sections (e.g., Grammar & Syntax, Vocabulary, Structure) and actionable feedback."
+            }
+          ]
+        },
+        generationConfig: {
+          maxOutputTokens: 2000
+        }
       })
     });
 
     const data = await response.json();
     
     if (!response.ok) {
-      console.error('Hugging Face Error:', data);
-      return res.status(response.status).json({ error: data.error?.message || 'Hugging Face API Error' });
+      console.error('Gemini API Error:', data);
+      return res.status(response.status).json({ error: data.error?.message || 'Gemini API Error' });
     }
 
-    // 提取 AI 吐出來的精準學術報告文字
-    const resultText = data.choices[0].message.content;
+    // 安全地提取 Gemini 吐出來的精準學術報告文字
+    if (!data.candidates || !data.candidates[0]?.content?.parts[0]?.text) {
+      console.error('Unexpected Gemini Response Format:', data);
+      return res.status(500).json({ error: 'Invalid response from AI model' });
+    }
+
+    const resultText = data.candidates[0].content.parts[0].text;
     
     // 同時回傳前端可能在等的欄位，確保報告顯現＋扣次數一次滿足
     return res.status(200).json({ 
