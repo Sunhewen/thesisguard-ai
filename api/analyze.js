@@ -15,21 +15,10 @@ module.exports = async function handler(req, res) {
 
   const { essay, text, content, userId, userEmail } = req.body;
   const finalInput = essay || text || content;
-
-  if (!finalInput) {
-    return res.status(400).json({ error: 'Please enter some thesis text.' });
-  }
-
-  // 2. 檢查 Gemini API Key
-  const apiKey = process.env.GEMINI_API_KEY; 
-  if (!apiKey) {
-    return res.status(500).json({ error: 'API key missing in Vercel settings' });
-  }
-
   const currentUserId = userId || 'admin_mock_001'; 
   
   try {
-    // 3. 讀取或建立資料庫使用者
+    // 2. 讀取或建立資料庫使用者
     let { data: user, error: dbError } = await supabase
       .from('users')
       .select('*')
@@ -47,12 +36,28 @@ module.exports = async function handler(req, res) {
       user = newUser;
     }
 
-    // 4. 判斷次數
+    // 🌟 核心修改點：如果沒有傳入論文內容，代表是前端在進行「登入狀態與額度同步」
+    if (!finalInput || finalInput.trim() === "") {
+      return res.status(200).json({
+        result: "Sync successful.",
+        data: "Sync successful.",
+        creditsRemains: (user.role === 'pro' || user.role === 'admin') ? '∞' : user.credits_remains,
+        userRole: user.role
+      });
+    }
+
+    // 3. 檢查次數（只有在真正要分析論文時才檢查）
     if (user.role !== 'pro' && user.role !== 'admin' && user.credits_remains <= 0) {
       return res.status(403).json({ error: 'You have run out of free credits. Please upgrade to Pro!' });
     }
 
-    // 🌟 5. 強化版：呼叫 Google Gemini，賦予極致學術 Prompt 職責
+    // 4. 檢查 Gemini API Key
+    const apiKey = process.env.GEMINI_API_KEY; 
+    if (!apiKey) {
+      return res.status(500).json({ error: 'API key missing in Vercel settings' });
+    }
+
+    // 5. 呼叫 Google Gemini，賦予極致學術 Prompt 職責
     const systemInstruction = 
       "You are a premier, world-class academic editor and peer reviewer for top-tier international journals (e.g., Nature, Science, IEEE). " +
       "Analyze the provided thesis text and generate a premium, rigorous editorial feedback report in professional English. " +
@@ -96,11 +101,13 @@ module.exports = async function handler(req, res) {
 
     const resultText = data.candidates[0].content.parts[0].text;
 
-    // 6. 扣點邏輯
+    // 6. 扣點邏輯（真正分析成功才扣點）
+    let updatedCredits = user.credits_remains;
     if (user.role !== 'pro' && user.role !== 'admin') {
+      updatedCredits = user.credits_remains - 1;
       await supabase
         .from('users')
-        .update({ credits_remains: user.credits_remains - 1 })
+        .update({ credits_remains: updatedCredits })
         .eq('id', currentUserId);
     }
 
@@ -108,7 +115,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ 
       result: resultText,
       data: resultText,
-      creditsRemains: (user.role === 'pro' || user.role === 'admin') ? '∞' : user.credits_remains - 1,
+      creditsRemains: (user.role === 'pro' || user.role === 'admin') ? '∞' : updatedCredits,
       userRole: user.role
     });
 
