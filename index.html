@@ -113,7 +113,7 @@
         .stat-card p { color: var(--text-muted); font-size: 12px; margin-bottom: 8px; }
         .stat-card h4 { font-size: 24px; font-weight: bold; }
 
-        /* 客製化彈出視窗外圍遮罩 */
+        /* 高質感彈出視窗外圍遮罩 */
         .custom-modal-overlay {
             display: none; 
             position: fixed;
@@ -325,15 +325,13 @@
     </div>
 
     <script>
-        // 🌟 核心步驟：將你從 Supabase 後台取得的 URL 與 Anon Key 填入此處
-        // （這組 Key 在前端公開是完全安全的，因為有 Supabase Row Level Security 保護）
+        // 🌟 初始化 Supabase 客戶端
         const SUPABASE_URL = "https://wknbwoodtnrxvjxofxdr.supabase.co"; 
-        const SUPABASE_ANON_KEY = "將你截圖中的 Publishable key (sb_publishable_...) 完整貼在這裡";
+        const SUPABASE_ANON_KEY = "請在這裡貼上你的 sb_publishable_ 開頭金鑰";
 
-        // 初始化 Supabase 前端客戶端
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 用戶真實資料庫狀態
+        // 用戶真實狀態控制
         let userState = {
             isLoggedIn: false,
             id: null,
@@ -342,7 +340,6 @@
             remains: 0
         };
 
-        // 控制客製化彈出視窗顯示的函數
         function showAlert(message) {
             document.getElementById('customModalMessage').innerText = message;
             document.getElementById('customModal').style.display = 'flex';
@@ -352,7 +349,6 @@
             document.getElementById('customModal').style.display = 'none';
         }
 
-        // 單頁式路由導航切換
         function navigateTo(pageId) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
@@ -360,7 +356,7 @@
             document.getElementById('avatar-dropdown').classList.remove('show');
         }
 
-        // 🌟 1. 真實功能：發送 Email OTP 驗證碼
+        // 發送 Email OTP
         async function handleSendOTP() {
             const email = document.getElementById('login-email').value.trim();
             if(!email) { showAlert('Please enter a valid email address.'); return; }
@@ -369,12 +365,9 @@
             sendBtn.disabled = true;
             sendBtn.innerText = 'Sending Link...';
 
-            // 呼叫 Supabase Auth 發送 OTP 密碼或 Magic link 到信箱
             const { error } = await _supabase.auth.signInWithOtp({
                 email: email,
-                options: {
-                    shouldCreateUser: true // 如果此信箱沒註冊過，會自動幫他建立帳號
-                }
+                options: { shouldCreateUser: true }
             });
 
             if (error) {
@@ -382,14 +375,14 @@
                 sendBtn.disabled = false;
                 sendBtn.innerText = 'Send Sign-In Link / OTP';
             } else {
-                showAlert('Success! A 6-digit login code / magic link has been sent to your email.');
+                showAlert('Success! A 6-digit login code has been sent to your email.');
                 document.getElementById('otp-step-verify').style.display = 'block';
                 sendBtn.innerText = 'Resend Code';
                 sendBtn.disabled = false;
             }
         }
 
-        // 🌟 2. 真實功能：校驗驗證碼完成登入
+        // 校驗驗證碼登入
         async function handleVerifyOTP() {
             const email = document.getElementById('login-email').value.trim();
             const token = document.getElementById('login-otp-code').value.trim();
@@ -411,42 +404,41 @@
                 verifyBtn.disabled = false;
                 verifyBtn.innerText = 'Verify & Login';
             } else {
-                // 登入成功，取得 Supabase 的真實 User 資料
                 const sessionUser = data.user;
                 userState.isLoggedIn = true;
                 userState.email = sessionUser.email;
-                userState.id = sessionUser.id; // 這就是真實的 UUID
+                userState.id = sessionUser.id;
                 
-                // 隱藏登入按鈕，開啟頭像 UI
                 document.getElementById('nav-login-btn').style.display = 'none';
                 document.getElementById('user-status-ui').style.display = 'flex';
 
-                // 向後端發送一次「空文字請求」來初始化/同步資料庫中的用戶額度資訊
                 await syncUserQuotaWithBackend();
 
                 showAlert('Logged in successfully via Supabase Auth!');
                 navigateTo('workspace');
                 
-                // 重置登入介面
                 verifyBtn.disabled = false;
                 verifyBtn.innerText = 'Verify & Login';
                 document.getElementById('otp-step-verify').style.display = 'none';
             }
         }
 
-        // 🌟 3. 真實功能：與後端同步並獲取當前用戶最新的剩餘次數與 Role
+        // 🌟 修正版：使用超純淨物件格式同步額度，防範特殊編碼錯誤
         async function syncUserQuotaWithBackend() {
             if(!userState.isLoggedIn) return;
             try {
+                const payload = {
+                    essay: "",
+                    userId: String(userState.id).trim(),
+                    userEmail: String(userState.email).trim()
+                };
+
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        essay: '', // 傳送空字串，僅作同步與讀取
-                        userId: userState.id,
-                        userEmail: userState.email
-                    })
+                    body: JSON.stringify(payload)
                 });
+                
                 const data = await response.json();
                 if (response.ok) {
                     if (data.userRole) userState.tier = data.userRole;
@@ -464,10 +456,8 @@
             }
         }
 
-        // 🌟 4. 真實功能：安全登出
         async function handleLogout() {
             await _supabase.auth.signOut();
-            
             userState.isLoggedIn = false;
             userState.tier = 'free';
             userState.remains = 0;
@@ -483,28 +473,24 @@
             navigateTo('home');
         }
 
-        // Stripe 金流跳轉接軌預留位置
         function redirectToStripe() {
             if (!userState.isLoggedIn) {
                 showAlert('Please sign in first to upgrade your account.');
                 navigateTo('login');
                 return;
             }
-            showAlert('【Stripe Gateway Integration Placeholder】\n\nThe client will now dispatch a request to the backend API endpoint (e.g., /api/checkout) to generate a session and securely redirect you to the Stripe Hosted Checkout view.');
+            showAlert('【Stripe Gateway Integration Placeholder】\n\nRedirecting to billing stripe components shortly.');
         }
 
-        // 點擊頭像開關下拉選單
         document.getElementById('user-avatar').addEventListener('click', function(e) {
             e.stopPropagation();
             document.getElementById('avatar-dropdown').classList.toggle('show');
         });
 
-        // 點擊網頁任意空白處，自動收起選單
         document.addEventListener('click', function() {
             document.getElementById('avatar-dropdown').classList.remove('show');
         });
 
-        // 全域同步更新右上角資訊欄 UI 核心邏輯
         function updateUserUI() {
             const remainBadge = document.getElementById('remain-badge');
             const proBadge = document.getElementById('pro-badge');
@@ -519,11 +505,7 @@
             if (dropdownRole) dropdownRole.innerText = `Plan: ${userState.tier.toUpperCase()}`;
 
             if (managerBtn) {
-                if (userState.tier === 'admin') {
-                    managerBtn.style.display = 'block';
-                } else {
-                    managerBtn.style.display = 'none';
-                }
+                managerBtn.style.display = (userState.tier === 'admin') ? 'block' : 'none';
             }
 
             if (userState.tier === 'admin') {
@@ -548,7 +530,7 @@
             }
         }
 
-        // 串接後端通道並呼叫大模型進行分析
+        // 🌟 修正版：使用超純淨物件格式發送論文分析
         async function runThesisAnalysis() {
             if (!userState.isLoggedIn) {
                 showAlert('Please login first to use the analysis tool.');
@@ -573,14 +555,16 @@
             analyzeBtn.innerText = "Analyzing...";
 
             try {
+                const payload = {
+                    essay: essayText,
+                    userId: String(userState.id).trim(),
+                    userEmail: String(userState.email).trim()
+                };
+
                 const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        essay: essayText,
-                        userId: userState.id,
-                        userEmail: userState.email
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
@@ -608,7 +592,7 @@
             }
         }
 
-        // 🌟 網頁加載時，自動檢查用戶是否本來就是登入狀態（持久化 Session 檢查）
+        // 持久化狀態偵測
         window.addEventListener('load', async () => {
             const { data: { session } } = await _supabase.auth.getSession();
             if (session && session.user) {
