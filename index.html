@@ -206,7 +206,7 @@
             <p>ThesisGuard AI helps global researchers, students, and academics review spelling, logic errors, and structural flows instantly. Built for international publication standards.</p>
             <div class="cta-group">
                 <button class="btn btn-primary" onclick="navigateTo('pricing')">Start 7-Day Free Trial</button>
-                <button class="btn btn-outline" onclick="navigateTo('login')">Login to use it for free!</button>
+                <button class="btn btn-outline" onclick="handleGetStartedClick()">Login to use it for free!</button>
             </div>
         </div>
     </section>
@@ -261,7 +261,7 @@
                     <li>✓ Standard Response Speed</li>
                     <li>✓ Basic Grammar Check</li>
                 </ul>
-                <button class="btn btn-outline" style="width:100%;" onclick="navigateTo('login')">Get Started</button>
+                <button class="btn btn-outline" style="width:100%;" onclick="handleGetStartedClick()">Get Started</button>
             </div>
             <div class="price-card premium">
                 <h3>Pro Member</h3>
@@ -325,7 +325,7 @@
     </div>
 
     <script>
-        // 🌟 初始化 Supabase 客戶端
+        // 初始化 Supabase 客戶端
         const SUPABASE_URL = "https://wknbwoodtnrxvjxofxdr.supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_IAhi3NSa-YctyIGWzF0r0w_l3BEElFJ";
 
@@ -349,11 +349,29 @@
             document.getElementById('customModal').style.display = 'none';
         }
 
+        // 🌟 修改點：單頁式導航增加「權限路由守衛」
         function navigateTo(pageId) {
+            // 如果要去工作區(workspace)或後台(manager)但沒登入，強制攔截導向登入
+            if ((pageId === 'workspace' || pageId === 'manager') && !userState.isLoggedIn) {
+                showAlert('Access Denied. Please sign in first to access your Workspace!');
+                navigateTo('login');
+                return;
+            }
+
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
             if (targetPage) targetPage.classList.add('active');
             document.getElementById('avatar-dropdown').classList.remove('show');
+        }
+
+        // 🌟 修改點：處理 Get Started 以及首頁 Login 按鈕點擊事件
+        function handleGetStartedClick() {
+            if (userState.isLoggedIn) {
+                navigateTo('workspace');
+            } else {
+                showAlert('Welcome! Please sign in first to setup your free workspace.');
+                navigateTo('login');
+            }
         }
 
         // 發送 Email OTP
@@ -423,7 +441,7 @@
             }
         }
 
-        // 🌟 修正版：使用超純淨物件格式同步額度，防範特殊編碼錯誤
+        // 同步額度
         async function syncUserQuotaWithBackend() {
             if(!userState.isLoggedIn) return;
             try {
@@ -530,7 +548,7 @@
             }
         }
 
-        // 🌟 修正版：使用超純淨物件格式發送論文分析
+        // 論文分析
         async function runThesisAnalysis() {
             if (!userState.isLoggedIn) {
                 showAlert('Please login first to use the analysis tool.');
