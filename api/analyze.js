@@ -52,19 +52,46 @@ module.exports = async function handler(req, res) {
       return res.status(403).json({ error: 'You have run out of free credits. Please upgrade to Pro!' });
     }
 
-    // 5. 呼叫 Google Gemini 2.5 Flash
+    // 🌟 5. 強化版：呼叫 Google Gemini，賦予極致學術 Prompt 職責
+    const systemInstruction = 
+      "You are a premier, world-class academic editor and peer reviewer for top-tier international journals (e.g., Nature, Science, IEEE). " +
+      "Analyze the provided thesis text and generate a premium, rigorous editorial feedback report in professional English. " +
+      "Your feedback must be clearly structured into four sections using markdown titles:\n" +
+      "### 1. Executive Summary & Tone Assessment\n" +
+      "### 2. Grammar, Spelling & Syntax Corrections (Highlight exact changes)\n" +
+      "### 3. Logical Flow & Argumentative Structure\n" +
+      "### 4. Actionable Recommendations for Publication Standards\n" +
+      "Maintain a critical, constructive, and scholarly tone.";
+
     const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `You are an expert academic editor. Analyze the provided thesis text for logic, tone, grammar, spelling, and structure. Provide a professional, detailed review report in English with clear sections and actionable feedback.\n\nHere is the thesis text:\n${finalInput}` }] }],
-        generationConfig: { maxOutputTokens: 2000 }
+        contents: [{ 
+          parts: [{ 
+            text: `${systemInstruction}\n\nHere is the user's academic text to analyze:\n--- \n${finalInput}\n ---` 
+          }] 
+        }],
+        generationConfig: { 
+          maxOutputTokens: 2500,
+          temperature: 0.2 // 調低溫度，確保學術輸出高度嚴謹與穩定
+        }
       })
     });
 
     const data = await response.json();
+    
+    // 如果 API 回傳非 200，抓取更精準的 Gemini 錯誤細節
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || 'Gemini API Error' });
+      console.error('Gemini API Error Detail:', JSON.stringify(data));
+      return res.status(response.status).json({ 
+        error: data.error?.message || 'Gemini API Error - Failed to fetch AI response.' 
+      });
+    }
+
+    // 安全防禦：防止 Gemini 返回空的 candidates
+    if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content) {
+      return res.status(502).json({ error: 'AI provider generated an empty response. Please try again.' });
     }
 
     const resultText = data.candidates[0].content.parts[0].text;
