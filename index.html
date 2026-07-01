@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ThesisGuard AI - Premium Academic Review</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --bg-color: #050505;
@@ -112,7 +113,7 @@
         .stat-card p { color: var(--text-muted); font-size: 12px; margin-bottom: 8px; }
         .stat-card h4 { font-size: 24px; font-weight: bold; }
 
-        /* 🌟 高質感彈出視窗外圍遮罩 */
+        /* 客製化彈出視窗外圍遮罩 */
         .custom-modal-overlay {
             display: none; 
             position: fixed;
@@ -124,7 +125,7 @@
             justify-content: center; align-items: center;
         }
         
-        /* 🌟 彈出視窗主體 */
+        /* 彈出視窗主體 */
         .custom-modal-box {
             background: #111111; 
             border: 1px solid var(--border-color);
@@ -142,7 +143,7 @@
             to { transform: scale(1); opacity: 1; }
         }
         
-        /* 🌟 右上角關閉叉叉 */
+        /* 右上角關閉叉叉 */
         .custom-modal-close {
             position: absolute;
             top: 14px; right: 18px;
@@ -153,12 +154,12 @@
         }
         .custom-modal-close:hover { color: #ff4d4d; }
         
-        /* 🌟 提示圖示與文字 */
+        /* 提示圖示與文字 */
         .custom-modal-icon { font-size: 36px; margin-bottom: 12px; }
         .custom-modal-title { color: var(--text-main); margin-bottom: 12px; font-size: 18px; font-weight: 600; }
         .custom-modal-message { color: var(--text-muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px; white-space: pre-line; }
         
-        /* 🌟 視窗確認按鈕 */
+        /* 視窗確認按鈕 */
         .custom-modal-btn {
             background: var(--accent-blue); color: white;
             border: none; padding: 10px 28px; border-radius: 6px;
@@ -180,7 +181,7 @@
             
             <div class="dropdown-container">
                 <div class="user-status-block" id="user-status-ui" style="display:none;">
-                    <span id="remain-badge" class="remains-badge">Remains: 3 times</span>
+                    <span id="remain-badge" class="remains-badge">Remains: -- times</span>
                     <span id="pro-badge" class="pro-badge" style="display:none;">PRO</span>
                     <span id="admin-badge" class="pro-badge" style="display:none; background: linear-gradient(45deg, #0070f3, #7928ca);">ADMIN</span>
                     <div class="avatar" id="user-avatar" style="cursor: pointer;" title="Open account menu">U</div>
@@ -191,8 +192,7 @@
                         <div id="dropdown-email" style="font-weight: 600; color: #fff; text-transform: none;">user@example.com</div>
                         <div id="dropdown-role" style="margin-top: 4px;">Plan: FREE</div>
                     </div>
-                    <button class="dropdown-item" onclick="toggleUserTierSimulation(event)" style="color: var(--accent-blue); font-size: 12px;">🔄 Cycle Role (Dev Test)</button>
-                    <button class="dropdown-item logout" onclick="simulateLogout()">Log Out</button>
+                    <button class="dropdown-item logout" onclick="handleLogout()">Log Out</button>
                 </div>
             </div>
 
@@ -214,15 +214,22 @@
     <section id="login" class="page">
         <div class="auth-container">
             <h2>Welcome Back</h2>
-            <div class="form-group">
-                <label>EMAIL ADDRESS</label>
-                <input type="email" placeholder="name@domain.com" id="login-email">
+            
+            <div id="otp-step-email">
+                <div class="form-group">
+                    <label>EMAIL ADDRESS</label>
+                    <input type="email" placeholder="name@domain.com" id="login-email">
+                </div>
+                <button class="btn btn-primary" style="width:100%; margin-top:10px;" id="send-otp-btn" onclick="handleSendOTP()">Send Sign-In Link / OTP</button>
             </div>
-            <div class="form-group">
-                <label>PASSWORD</label>
-                <input type="password" placeholder="••••••••" id="login-password">
+
+            <div id="otp-step-verify" style="display: none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <div class="form-group">
+                    <label>ENTER 6-DIGIT VERIFICATION CODE</label>
+                    <input type="text" placeholder="123456" id="login-otp-code">
+                </div>
+                <button class="btn btn-primary" style="width:100%; background: var(--accent-purple);" id="verify-otp-btn" onclick="handleVerifyOTP()">Verify & Login</button>
             </div>
-            <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="simulateLogin()">Sign In / Sign Up</button>
         </div>
     </section>
 
@@ -318,13 +325,21 @@
     </div>
 
     <script>
-        // 用戶模擬資料庫狀態配置
+        // 🌟 核心步驟：將你從 Supabase 後台取得的 URL 與 Anon Key 填入此處
+        // （這組 Key 在前端公開是完全安全的，因為有 Supabase Row Level Security 保護）
+        const SUPABASE_URL = "https://wknbwoodtnrxvjxofxdr.supabase.co"; 
+        const SUPABASE_ANON_KEY = "將你截圖中的 Publishable key (sb_publishable_...) 完整貼在這裡";
+
+        // 初始化 Supabase 前端客戶端
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 用戶真實資料庫狀態
         let userState = {
             isLoggedIn: false,
-            id: 'admin_mock_001',
-            email: 'user@example.com',
-            tier: 'free', // 'free' | 'pro' | 'admin'
-            remains: 3
+            id: null,
+            email: '',
+            tier: 'free', 
+            remains: 0
         };
 
         // 控制客製化彈出視窗顯示的函數
@@ -333,7 +348,6 @@
             document.getElementById('customModal').style.display = 'flex';
         }
 
-        // 關閉客製化彈出視窗的函數
         function closeModal() {
             document.getElementById('customModal').style.display = 'none';
         }
@@ -343,46 +357,129 @@
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             const targetPage = document.getElementById(pageId);
             if (targetPage) targetPage.classList.add('active');
-            
             document.getElementById('avatar-dropdown').classList.remove('show');
         }
 
-        // 模擬登入流程
-        function simulateLogin() {
+        // 🌟 1. 真實功能：發送 Email OTP 驗證碼
+        async function handleSendOTP() {
             const email = document.getElementById('login-email').value.trim();
-            if(!email) { showAlert('Please enter an email.'); return; }
+            if(!email) { showAlert('Please enter a valid email address.'); return; }
             
-            userState.isLoggedIn = true;
-            userState.email = email;
-            userState.id = 'usr_' + btoa(email).substring(0, 8);
-            
-            if(email.toLowerCase().includes('admin')) {
-                userState.tier = 'admin';
+            const sendBtn = document.getElementById('send-otp-btn');
+            sendBtn.disabled = true;
+            sendBtn.innerText = 'Sending Link...';
+
+            // 呼叫 Supabase Auth 發送 OTP 密碼或 Magic link 到信箱
+            const { error } = await _supabase.auth.signInWithOtp({
+                email: email,
+                options: {
+                    shouldCreateUser: true // 如果此信箱沒註冊過，會自動幫他建立帳號
+                }
+            });
+
+            if (error) {
+                showAlert(`Error: ${error.message}`);
+                sendBtn.disabled = false;
+                sendBtn.innerText = 'Send Sign-In Link / OTP';
             } else {
-                userState.tier = 'free';
+                showAlert('Success! A 6-digit login code / magic link has been sent to your email.');
+                document.getElementById('otp-step-verify').style.display = 'block';
+                sendBtn.innerText = 'Resend Code';
+                sendBtn.disabled = false;
             }
-            
-            document.getElementById('nav-login-btn').style.display = 'none';
-            document.getElementById('user-status-ui').style.display = 'flex';
-            updateUserUI();
-            
-            showAlert(`Logged in successfully as ${userState.tier.toUpperCase()}! Redirecting to Workspace.`);
-            navigateTo('workspace');
         }
 
-        // 模擬登出流程
-        function simulateLogout() {
+        // 🌟 2. 真實功能：校驗驗證碼完成登入
+        async function handleVerifyOTP() {
+            const email = document.getElementById('login-email').value.trim();
+            const token = document.getElementById('login-otp-code').value.trim();
+
+            if(!token) { showAlert('Please enter the 6-digit verification code.'); return; }
+
+            const verifyBtn = document.getElementById('verify-otp-btn');
+            verifyBtn.disabled = true;
+            verifyBtn.innerText = 'Verifying...';
+
+            const { data, error } = await _supabase.auth.verifyOtp({
+                email,
+                token,
+                type: 'email'
+            });
+
+            if (error) {
+                showAlert(`Verification Failed: ${error.message}`);
+                verifyBtn.disabled = false;
+                verifyBtn.innerText = 'Verify & Login';
+            } else {
+                // 登入成功，取得 Supabase 的真實 User 資料
+                const sessionUser = data.user;
+                userState.isLoggedIn = true;
+                userState.email = sessionUser.email;
+                userState.id = sessionUser.id; // 這就是真實的 UUID
+                
+                // 隱藏登入按鈕，開啟頭像 UI
+                document.getElementById('nav-login-btn').style.display = 'none';
+                document.getElementById('user-status-ui').style.display = 'flex';
+
+                // 向後端發送一次「空文字請求」來初始化/同步資料庫中的用戶額度資訊
+                await syncUserQuotaWithBackend();
+
+                showAlert('Logged in successfully via Supabase Auth!');
+                navigateTo('workspace');
+                
+                // 重置登入介面
+                verifyBtn.disabled = false;
+                verifyBtn.innerText = 'Verify & Login';
+                document.getElementById('otp-step-verify').style.display = 'none';
+            }
+        }
+
+        // 🌟 3. 真實功能：與後端同步並獲取當前用戶最新的剩餘次數與 Role
+        async function syncUserQuotaWithBackend() {
+            if(!userState.isLoggedIn) return;
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        essay: '', // 傳送空字串，僅作同步與讀取
+                        userId: userState.id,
+                        userEmail: userState.email
+                    })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    if (data.userRole) userState.tier = data.userRole;
+                    if (data.creditsRemains !== undefined) {
+                        if (data.creditsRemains === '∞') {
+                            userState.tier = 'pro';
+                        } else {
+                            userState.remains = parseInt(data.creditsRemains) || 0;
+                        }
+                    }
+                    updateUserUI();
+                }
+            } catch (err) {
+                console.error("Failed to sync quota:", err);
+            }
+        }
+
+        // 🌟 4. 真實功能：安全登出
+        async function handleLogout() {
+            await _supabase.auth.signOut();
+            
             userState.isLoggedIn = false;
             userState.tier = 'free';
-            userState.remains = 3;
+            userState.remains = 0;
             userState.email = 'user@example.com';
+            userState.id = null;
             
             document.getElementById('nav-login-btn').style.display = 'block';
             document.getElementById('user-status-ui').style.display = 'none';
             document.getElementById('avatar-dropdown').classList.remove('show');
             updateUserUI();
             
-            showAlert('Logged out successfully.');
+            showAlert('You have been logged out safely.');
             navigateTo('home');
         }
 
@@ -393,23 +490,7 @@
                 navigateTo('login');
                 return;
             }
-            
-            showAlert('【Stripe Gateway Integration Placeholder】\n\nThe client will now dispatch a request to the backend API endpoint (e.g., /api/checkout) to generate a session and securely redirect you to the Stripe Hosted Checkout view.\n\nUpon successful checkout, the database tier will update via webhooks automatically.');
-        }
-
-        // 內部開發測試用：點擊選單內按鈕可以快速切換 Free/Pro/Admin 狀態
-        function toggleUserTierSimulation(e) {
-            if(e) e.stopPropagation();
-            if(!userState.isLoggedIn) return;
-            
-            if (userState.tier === 'free') {
-                userState.tier = 'pro';
-            } else if (userState.tier === 'pro') {
-                userState.tier = 'admin';
-            } else {
-                userState.tier = 'free';
-            }
-            updateUserUI();
+            showAlert('【Stripe Gateway Integration Placeholder】\n\nThe client will now dispatch a request to the backend API endpoint (e.g., /api/checkout) to generate a session and securely redirect you to the Stripe Hosted Checkout view.');
         }
 
         // 點擊頭像開關下拉選單
@@ -475,14 +556,14 @@
                 return;
             }
 
+            const essayText = document.getElementById('essay-input').value.trim();
+            if (!essayText) { showAlert('Please paste some text to analyze.'); return; }
+
             if (userState.tier !== 'pro' && userState.tier !== 'admin' && userState.remains <= 0) {
                 showAlert('You have 0 free credits left! Please upgrade to PRO for unlimited usage.');
                 navigateTo('pricing');
                 return;
             }
-
-            const essayText = document.getElementById('essay-input').value.trim();
-            if (!essayText) { showAlert('Please paste some text to analyze.'); return; }
 
             const outputBox = document.getElementById('analysis-output');
             const analyzeBtn = document.getElementById('analyze-btn');
@@ -497,8 +578,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         essay: essayText,
-                        text: essayText,
-                        content: essayText,
                         userId: userState.id,
                         userEmail: userState.email
                     })
@@ -509,10 +588,7 @@
                 if (response.ok) {
                     outputBox.innerText = data.result || data.data || "Analysis completed.";
                     
-                    if (data.userRole) {
-                        userState.tier = data.userRole;
-                    }
-                    
+                    if (data.userRole) userState.tier = data.userRole;
                     if (data.creditsRemains !== undefined) {
                         if (data.creditsRemains === '∞') {
                             userState.tier = 'pro';
@@ -521,7 +597,6 @@
                         }
                     }
                     updateUserUI();
-                    
                 } else {
                     showAlert(`Error: ${data.error || 'Failed to process.'}`);
                 }
@@ -533,8 +608,20 @@
             }
         }
 
-        // 初始化權限 UI Context
-        updateUserUI();
+        // 🌟 網頁加載時，自動檢查用戶是否本來就是登入狀態（持久化 Session 檢查）
+        window.addEventListener('load', async () => {
+            const { data: { session } } = await _supabase.auth.getSession();
+            if (session && session.user) {
+                userState.isLoggedIn = true;
+                userState.email = session.user.email;
+                userState.id = session.user.id;
+                document.getElementById('nav-login-btn').style.display = 'none';
+                document.getElementById('user-status-ui').style.display = 'flex';
+                await syncUserQuotaWithBackend();
+            } else {
+                updateUserUI();
+            }
+        });
     </script>
 </body>
 </html>
