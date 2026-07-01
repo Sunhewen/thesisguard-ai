@@ -69,7 +69,8 @@ module.exports = async function handler(req, res) {
       "Maintain a critical, constructive, and scholarly tone.";
 
     // 修改後的網址（Pro）
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+    // 改回這個完全免費的 Flash 模型
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
